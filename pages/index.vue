@@ -20,6 +20,14 @@ interface History {
 }
 const history = useLocalStorage<History[]>("dns-history", []);
 
+const filteredHistory = computed(() => {
+  if (!input.value) return history.value;
+  const searchTerm = input.value.toLowerCase();
+  return history.value.filter(item => 
+    item.domain.toLowerCase().includes(searchTerm)
+  );
+});
+
 function extractDomain(input: string): string {
   // Удаляем начальные и конечные пробелы
   let url = input.trim();
@@ -85,21 +93,28 @@ const getDns = async (domain: string) => {
 const addHistory = async () => {
   if (!input.value) return;
   const domain = extractDomain(input.value);
-  const existingItem = history.value.find((item) => item.domain === domain);
-  if (existingItem) {
-    existingItem.isLoading = true;
+  
+  // Проверяем, есть ли точное совпадение
+  const exactMatch = history.value.find(item => 
+    item.domain.toLowerCase() === domain.toLowerCase()
+  );
+  
+  if (exactMatch) {
+    // Если есть точное совпадение, обновляем его
+    exactMatch.isLoading = true;
     history.value = [
-      existingItem,
-      ...history.value.filter((item) => item.domain !== domain),
+      exactMatch,
+      ...history.value.filter(item => item.domain !== exactMatch.domain),
     ];
+    await getDns(domain);
   } else {
-    history.value.map((item) => (item.isOpen = false));
+    // Если нет точного совпадения, добавляем новый домен
+    history.value.map(item => (item.isOpen = false));
     history.value.unshift({
       domain: domain,
       isLoading: true,
       isOpen: true,
     });
-
     await getDns(domain);
   }
   input.value = ""; // Очищаем поле ввода после добавления
@@ -152,7 +167,7 @@ const refreshDns = async (domain: string) => {
     <div class="py-2 space-y-1">
       <Collapsible
         v-model:open="item.isOpen"
-        v-for="item in history"
+        v-for="item in filteredHistory"
         :key="item.domain"
         class="text-sm rounded-md shadow-sm hover:border-gray-300 hover:bg-gray-50 transition-all border border-gray-200 bg-gray-50"
       >
