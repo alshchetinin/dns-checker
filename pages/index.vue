@@ -4,6 +4,8 @@ import { Toaster } from "@/components/ui/sonner";
 const input = ref("");
 const output = ref("");
 import { MoreVertical, Copy, Plus, List } from "lucide-vue-next";
+import * as punycode from 'punycode';
+
 interface MxRecord {
   exchange: string;
   priority: number;
@@ -34,20 +36,23 @@ function extractDomain(input: string): string {
     // Извлекаем hostname (домен с поддоменом)
     let domain = parsedUrl.hostname;
 
+    // Декодируем punycode если домен содержит xn--
+    if (domain.includes('xn--')) {
+      domain = punycode.toUnicode(domain);
+    }
+
     // Удаляем 'www.' если оно присутствует
     domain = domain.replace(/^www\./, "");
 
     return domain;
   } catch (error) {
-    // Если URL некорректный, пытаемся извлечь домен регулярным выражением
-    const match = input.match(/^(?:https?:\/\/)?(?:www\.)?([^\/\?]+)/i);
-    if (match && match[1]) {
-      return match[1].replace(/^www\./, "");
-    }
-
-    // Если не удалось извлечь домен, возвращаем пустую строку
-    console.error("Unable to extract domain from:", input);
-    return "";
+    // Если URL некорректный, возвращаем исходное значение без протокола и www
+    const cleanInput = input.trim()
+      .replace(/^https?:\/\//i, '')
+      .replace(/^www\./, '');
+      
+    // Проверяем, не является ли введенное значение punycode
+    return cleanInput.includes('xn--') ? punycode.toUnicode(cleanInput) : cleanInput;
   }
 }
 
