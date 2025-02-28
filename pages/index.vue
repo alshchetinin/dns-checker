@@ -6,6 +6,9 @@ const output = ref("");
 import { MoreVertical, Copy, Plus, List } from "lucide-vue-next";
 import * as punycode from 'punycode';
 
+// Создаем ссылку на элемент ввода для автофокуса
+const inputRef = ref(null);
+
 interface MxRecord {
   exchange: string;
   priority: number;
@@ -143,6 +146,18 @@ const refreshDns = async (domain: string) => {
   history.value.find((item) => item.domain === domain)!.isLoading = true;
   await getDns(domain);
 };
+
+// Исправляем хук onMounted для установки фокуса при загрузке страницы
+onMounted(() => {
+  // Используем nextTick для гарантии, что DOM полностью загружен
+  nextTick(() => {
+    // Находим input внутри компонента
+    const inputElement = document.querySelector('input');
+    if (inputElement) {
+      inputElement.focus();
+    }
+  });
+});
 </script>
 
 <template>
