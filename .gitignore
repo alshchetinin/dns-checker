@@ -18,6 +18,9 @@ logs
 .fleet
 .idea
 
+# OG image generator font cache
+scripts/.fonts
+
 # Local env files
 .env
 .env.*
